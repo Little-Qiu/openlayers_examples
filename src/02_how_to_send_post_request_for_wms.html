@@ -117,9 +117,43 @@
                     // img.src = src;
                     // console.log(src);
                     let img = image.getImage();
+                    // img.src = src
+                    // SERVICE: WMS
+                    // VERSION: 1.1.0
+                    // REQUEST: GetMap
+                    // FORMAT: image/png
+                    // TRANSPARENT: true
+                    // LAYERS: 4
+                    // SRS: EPSG:4490
+                    // STYLES: 
+                    // MAP_RESOLUTION: 112.5
+                    // WIDTH: 2880
+                    // HEIGHT: 1414
+                    // BBOX: 119.6435173475,30.369648610390627,120.4345329725,30.758015309609377
+
+                    let testXML =  '<?xml version="1.0" encoding="UTF-8"?>'+ 
+                    '<ogc:GetMap xmlns:ogc="http://www.opengis.net/ows"  outputFormat="application/json" xmlns:gml="http://www.opengis.net/gml" version="1.0.0" service="WMS">' +
+                     '<StyledLayerDescriptor version="1.0.0">'+
+                       '<NamedLayer> '+
+                            '<Name>4</Name> '+
+                            '<NamedStyle><Name></Name></NamedStyle> '+
+                       '</NamedLayer>'+
+                   '</StyledLayerDescriptor>'+
+                   '<BoundingBox srsName="http://www.opengis.net/gml/srs/epsg.xml#4326">'+
+                       '<gml:coord><gml:X>119.6435173475</gml:X><gml:Y>30.369648610390627</gml:Y></gml:coord>'+
+                        '<gml:coord><gml:X>120.4345329725</gml:X><gml:Y>30.758015309609377</gml:Y></gml:coord>'+
+                   ' </BoundingBox>'+
+                  '  <Output>'+
+                      '<Format>image/png</Format>'+
+                        '<Size><Width>2880</Width><Height>1414</Height></Size>'+
+                    '</Output>'+
+                   '</ogc:GetMap>';
                     $.ajax({
-                        url:src,
-                        type:"get",
+                        contentType:'text/xml',
+                        url:'http://huzhou-jczl-ajgis-test.spacecig.com/arcgis/services/ZJ_DQ_RISKCTRL2/MapServer/WmsServer',
+                        type:"POST",
+                        data: testXML,
+                        dataType:'XML',
                         success:function(response){
                             console.log(response);
                         }
