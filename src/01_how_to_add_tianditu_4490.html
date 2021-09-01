@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>how_to_send_post_request_for_wms</title>
+    <script src="../deps/openlayers/ol.js"></script>
+    <script src="../deps/proj4js/proj4.js"></script>
+    <link rel="stylesheet" href="../deps/openlayers/ol.css">
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        iframe {
+            height: 90%;
+            width: 100%;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map">
+
+    </div>
+</body>
+
+</html>
+
+<script>
+    initMap();
+    function setProjection() {
+        proj4.defs("EPSG:4490", "+proj=longlat +ellps=GRS80 +no_defs");
+        ol.proj.proj4.register(proj4);
+        let projection = new ol.proj.Projection({
+            code: "EPSG:4490",
+            units: "degrees",
+            axisOrientation: "neu"
+        });
+        ol.proj.addProjection(projection);
+        let projection4490 = ol.proj.get('EPSG:4490');
+        //下面这俩 extent 都必须有  
+        projection4490.setExtent([-180, -90, 180, 90]);
+        projection4490.setWorldExtent([-180, -90, 180, 90]);
+        return projection4490;
+    }
+    function initMap() {
+        let projection4490 = setProjection();
+        var map = new ol.Map({
+            target: 'map',//地图标签id
+            view: new ol.View({
+                center: [119.57227035000, 30.62208529000],//地图中心点位置
+                zoom: 12,
+                projection: projection4490
+            }),
+            layers: []
+        });
+        let tileGrid = getTileGrid(4490, 20);
+        let lyr = new ol.layer.Tile({
+            source: new ol.source.WMTS({
+                name: "中国矢量1-14级",
+                url: "http://t{0-6}.tianditu.com/vec_c/wmts?tk=fbaab7dca87a6ebf0bd1071ad5d837c0",
+                layer: "vec",
+                style: "default",
+                matrixSet: "c",
+                format: "tiles",
+                wrapX: true, //地图缩小后，防止在一个页面出现多个一样的地图
+                tileGrid: tileGrid
+            })
+        });
+        let lyr2 = new ol.layer.Tile({
+            source: new ol.source.WMTS({
+                name: "中国矢量1-14级",
+                url: "http://t{0-6}.tianditu.com/cva_c/wmts?tk=fbaab7dca87a6ebf0bd1071ad5d837c0",
+                layer: "cva",
+                style: "default",
+                matrixSet: "c",
+                format: "tiles",
+                wrapX: true, //地图缩小后，防止在一个页面出现多个一样的地图
+                tileGrid: tileGrid
+            })
+        });
+        map.addLayer(lyr);
+        map.addLayer(lyr2)
+    }
+    function getTileGrid(code, maxlevel) {
+        let projection = ol.proj.get('EPSG:' + code);
+        let projectionExtent = projection.getExtent();
+        let size = ol.extent.getWidth(projectionExtent) / 256;
+        let maxnum = maxlevel + 1;
+        let resolutions = new Array(maxnum);
+        let matrixIds = new Array(maxnum);
+        for (let z = 0; z < maxnum; ++z) {
+            // generate resolutions and matrixIds arrays for this WMTS
+            resolutions[z] = size / Math.pow(2, z);
+            matrixIds[z] = z;
+        }
+        let tileGrid = new ol.tilegrid.WMTS({
+            origin: ol.extent.getTopLeft(projectionExtent),
+            resolutions: resolutions,
+            matrixIds: matrixIds
+        });
+        return tileGrid;
+    }
+</script>
