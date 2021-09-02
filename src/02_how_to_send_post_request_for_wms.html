@@ -31,12 +31,13 @@
 </head>
 <body>
     <div id="map">
-
+        <div><button onclick="update()">更新imgae</button></div>
     </div>
 </body>
 </html>
 
 <script>
+    var lyr3 = null;
     initMap();
     function setProjection(){
         proj4.defs("EPSG:4490", "+proj=longlat +ellps=GRS80 +no_defs");
@@ -103,66 +104,78 @@
         });
         map.addLayer(lyr);
         map.addLayer(lyr2);
-        let lyr3 = new ol.layer.Image({
+        lyr3 = new ol.layer.Image({
             source: new ol.source.ImageWMS({
                 url: 'http://huzhou-jczl-ajgis-test.spacecig.com/arcgis/services/ZJ_DQ_RISKCTRL2/MapServer/WmsServer',
                 params: {
                     VERSION: '1.1.0',
-                    LAYERS: '4',
+                    LAYERS: '10',
                     SRS: 4490
                 },
                 serverType: 'mapserver',
                 imageLoadFunction: async function (image, src) {
-                    // let img = image.getImage();
-                    // img.src = src;
-                    // console.log(src);
-                    let img = image.getImage();
-                    // img.src = src
-                    // SERVICE: WMS
-                    // VERSION: 1.1.0
-                    // REQUEST: GetMap
-                    // FORMAT: image/png
-                    // TRANSPARENT: true
-                    // LAYERS: 4
-                    // SRS: EPSG:4490
-                    // STYLES: 
-                    // MAP_RESOLUTION: 112.5
-                    // WIDTH: 2880
-                    // HEIGHT: 1414
-                    // BBOX: 119.6435173475,30.369648610390627,120.4345329725,30.758015309609377
-
-                    let testXML =  '<?xml version="1.0" encoding="UTF-8"?>'+ 
-                    '<ogc:GetMap xmlns:ogc="http://www.opengis.net/ows"  outputFormat="application/json" xmlns:gml="http://www.opengis.net/gml" version="1.0.0" service="WMS">' +
-                     '<StyledLayerDescriptor version="1.0.0">'+
-                       '<NamedLayer> '+
-                            '<Name>4</Name> '+
-                            '<NamedStyle><Name></Name></NamedStyle> '+
-                       '</NamedLayer>'+
-                   '</StyledLayerDescriptor>'+
-                   '<BoundingBox srsName="http://www.opengis.net/gml/srs/epsg.xml#4326">'+
-                       '<gml:coord><gml:X>119.6435173475</gml:X><gml:Y>30.369648610390627</gml:Y></gml:coord>'+
-                        '<gml:coord><gml:X>120.4345329725</gml:X><gml:Y>30.758015309609377</gml:Y></gml:coord>'+
-                   ' </BoundingBox>'+
-                  '  <Output>'+
-                      '<Format>image/png</Format>'+
-                        '<Size><Width>2880</Width><Height>1414</Height></Size>'+
-                    '</Output>'+
-                   '</ogc:GetMap>';
+                    let src_= decodeURIComponent(src);
+                    let urlArray = src_.split("?");
+                    let url = urlArray[0];
+                    var img = image.getImage();
+                    let para= urlToObject(src_);
+                    console.log(para);
+                    let ss = {
+                        bbox: para.BBOX,
+                        bboxSR: '',
+                        layers: 'show:'+ para.LAYERS,
+                        layerDefs: para.layerDefs,
+                        size: para.WIDTH + ',' + para.HEIGHT,
+                        imageSR: '',
+                        format: 'png',
+                        transparent: true,
+                        dpi: '',
+                        time: '',
+                        layerTimeOptions: '',
+                        dynamicLayers: '',
+                        gdbVersion: '',
+                        mapScale:'',
+                        rotation: '',
+                        datumTransformations:  '',
+                        layerParameterValues:  '',
+                        mapRangeValues:  '',
+                        layerRangeValues:  '',
+                        f: 'pjson'
+                    }
                     $.ajax({
-                        contentType:'text/xml',
-                        url:'http://huzhou-jczl-ajgis-test.spacecig.com/arcgis/services/ZJ_DQ_RISKCTRL2/MapServer/WmsServer',
-                        type:"POST",
-                        data: testXML,
-                        dataType:'XML',
-                        success:function(response){
+                        url:'http://huzhou-jczl-ajgis-test.spacecig.com/arcgis/rest/services/ZJ_DQ_RISKCTRL2/MapServer/export',
+                        type: "POST",
+                        data: ss,
+                        dataType:'json',
+                        async: false,
+                        success: function(response){
                             console.log(response);
+                            img.src = response.href
                         }
                     })
                 }
             })
         })
         map.addLayer(lyr3);
+      
     }
+    function update(){
+        let str = `{"10":" MDJF_TYPE IN ('婚姻家庭邻里关系纠纷')"}`
+        lyr3.getSource().updateParams({ layerDefs: str });
+    }
+    function urlToObject(url) {
+        var urlObject = {};
+        if (/\?/.test(url)) {
+        var urlString = url.substring(url.indexOf("?")+1);
+        var urlArray = urlString.split("&");
+        for (var i=0, len=urlArray.length; i<len; i++) {
+        var urlItem = urlArray[i];
+        var item = urlItem.split("=");
+        urlObject[item[0]] = item[1];
+        }
+        return urlObject;
+        }
+    };
     function getTileGrid(code, maxlevel) {
         let projection = ol.proj.get('EPSG:' + code);
         let projectionExtent = projection.getExtent();
